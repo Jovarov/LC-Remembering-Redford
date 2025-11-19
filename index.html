@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listening Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Verdana, sans-serif;
+            background: #0f172a;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #1e293b;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        
+        .subtitle {
+            color: #64748b;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        label {
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        input[type="text"], input[type="date"] {
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        input[type="text"]:focus, input[type="date"]:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .warning-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            margin-bottom: 25px;
+            border-radius: 4px;
+        }
+        
+        .warning-box strong {
+            display: block;
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+        
+        .warning-box ul {
+            margin-left: 20px;
+            color: #92400e;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-primary:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-success:hover:not(:disabled) {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+        
+        .error-message {
+            background: #fee;
+            color: #c53030;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c53030;
+        }
+        
+        .audio-player {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        .audio-player h2 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        .play-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 16px 40px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .play-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(255,255,255,0.3);
+        }
+        
+        .play-btn:disabled {
+            background: #e2e8f0;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+        
+        .play-status {
+            color: white;
+            margin-top: 15px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .question-container {
+            margin-bottom: 30px;
+            background: #f8fafc;
+            padding: 24px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .question-number {
+            font-weight: 600;
+            color: #3b82f6;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        
+        .question-text {
+            font-size: 18px;
+            color: #1e293b;
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 14px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .option:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        
+        .option input[type="radio"] {
+            margin-right: 12px;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .option label {
+            cursor: pointer;
+            margin: 0;
+            flex: 1;
+            font-size: 16px;
+            color: #334155;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .success-message {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .success-icon {
+            font-size: 80px;
+            color: #10b981;
+            margin-bottom: 20px;
+        }
+        
+        .timer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+            z-index: 1000;
+        }
+        
+        .audio-status {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 16px;
+            font-weight: 600;
+            z-index: 1000;
+        }
+        
+        .audio-status.playing {
+            background: #10b981;
+            color: white;
+        }
+        
+        .audio-status.finished {
+            background: #64748b;
+            color: white;
+        }
+        
+        #test-screen, #submit-screen {
+            display: none;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: white;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div class="container" id="login-screen">
+        <h1>🎧 Listening Test</h1>
+        <p class="subtitle">Enter your information to begin</p>
+        
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="firstName">First Name</label>
+                <input type="text" id="firstName" placeholder="John" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="lastName">Last Name</label>
+                <input type="text" id="lastName" placeholder="Smith" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="studentClass">Class</label>
+                <input type="text" id="studentClass" placeholder="10A" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="testDate">Date</label>
+                <input type="date" id="testDate" autocomplete="off">
+            </div>
+        </div>
+        
+        <div class="warning-box">
+            <strong>⚠️ Important Instructions:</strong>
+            <ul>
+                <li>The test will open in fullscreen mode</li>
+                <li>You will hear an audio clip - listen carefully!</li>
+                <li>The audio will play ONLY ONCE - you cannot replay it</li>
+                <li>Do not switch tabs or exit fullscreen. This will be logged!</li>
+                <li>You can only take this test once</li>
+            </ul>
+        </div>
+        
+        <button class="btn btn-primary" id="startBtn" onclick="startTest()">
+            Start Test in Fullscreen
+        </button>
+        
+        <div id="errorMsg" class="error-message" style="display: none;"></div>
+    </div>
+
+    <!-- Test Screen -->
+    <div class="container" id="test-screen">
+        <div class="timer" id="timer"></div>
+        <div class="audio-status" id="audioStatus">🎵 Not played yet</div>
+        
+        <h1>Listening Test</h1>
+        <p class="subtitle" id="studentInfo"></p>
+        
+        <div class="audio-player">
+            <h2>Audio Clip</h2>
+            <button class="play-btn" id="playBtn" onclick="playAudio()" disabled>
+                <span id="playBtnIcon">▶️</span>
+                <span id="playBtnText">Loading audio...</span>
+            </button>
+            <div class="play-status" id="playStatus">Preparing audio clip...</div>
+            <div class="progress-bar" id="progressBar" style="display: none;">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+        
+        <div id="questions-container"></div>
+        
+        <button class="btn btn-success" id="submitBtn" onclick="submitTest()" style="display: none;">
+            Submit Test
+        </button>
+    </div>
+
+    <!-- Submit Screen -->
+    <div class="container" id="submit-screen">
+        <div class="success-message">
+            <div class="success-icon">✓</div>
+            <h1>Test Submitted Successfully!</h1>
+            <p class="subtitle">Your answers have been recorded. You may now close this page.</p>
+        </div>
+    </div>
+
+    <!-- Hidden Audio Element -->
+    <audio id="audioElement" style="display: none;"></audio>
+
+    <script>
+        // ============ CONFIGURATION ============
+        // Replace this URL with your Google Apps Script web app URL
+        const SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+        
+        // ============ STATE VARIABLES ============
+        let questions = [];
+        let answers = {};
+        let studentData = {};
+        let startTime;
+        let timerInterval;
+        let warnings = 0;
+        let isFraud = false;
+        let audioPlayed = false;
+        let audioLoaded = false;
+        let audioElement;
+
+        // Set default date to today
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('testDate').value = today;
+        });
+
+        // ============ FULLSCREEN & FRAUD DETECTION ============
+        document.addEventListener('fullscreenchange', function() {
+            if (!document.fullscreenElement && document.getElementById('test-screen').style.display === 'block' && !isFraud) {
+                warnings++;
+                console.log('Fullscreen exit. Warnings:', warnings);
+                if (warnings >= 3) {
+                    markAsFraud('Exited fullscreen 3 times');
+                } else {
+                    alert(`⚠️ Warning ${warnings}/3: You exited fullscreen! One more violation and your test will be marked as fraud.`);
+                    enterFullscreen();
+                }
+            }
+        });
+
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && document.getElementById('test-screen').style.display === 'block' && !isFraud) {
+                warnings++;
+                console.log('Tab switch. Warnings:', warnings);
+                if (warnings >= 3) {
+                    markAsFraud('Switched tabs 3 times');
+                } else {
+                    alert(`⚠️ Warning ${warnings}/3: Tab switching is not allowed! One more violation and your test will be marked as fraud.`);
+                }
+            }
+        });
+
+        window.addEventListener('beforeunload', function(e) {
+            if (document.getElementById('test-screen').style.display === 'block') {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+
+        function markAsFraud(reason) {
+            isFraud = true;
+            alert(`🚫 TEST MARKED AS FRAUD\n\nReason: ${reason}\n\nYour test will be submitted automatically.`);
+            setTimeout(() => submitTest(), 2000);
+        }
+
+        function enterFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+        }
+
+        // ============ START TEST ============
+        async function startTest() {
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const studentClass = document.getElementById('studentClass').value.trim();
+            const testDate = document.getElementById('testDate').value;
+            
+            if (!firstName || !lastName || !studentClass || !testDate) {
+                showError('Please fill in all fields.');
+                return;
+            }
+            
+            studentData = { firstName, lastName, studentClass, testDate };
+            
+            // Check if student has already taken the test
+            try {
+                const checkResponse = await fetch(`${SCRIPT_URL}?action=checkStudent&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}`);
+                const checkData = await checkResponse.json();
+                
+                if (checkData.alreadyTaken) {
+                    showError('You have already taken this test. Contact your teacher if you believe this is an error.');
+                    return;
+                }
+            } catch (error) {
+                showError('Unable to connect to the server. Please check your internet connection.');
+                return;
+            }
+            
+            // Enter fullscreen
+            enterFullscreen();
+            
+            // Switch to test screen
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('test-screen').style.display = 'block';
+            document.getElementById('studentInfo').textContent = `${firstName} ${lastName} - ${studentClass} - ${testDate}`;
+            
+            startTime = new Date();
+            startTimer();
+            
+            await loadTest();
+        }
+
+        // ============ TIMER ============
+        function startTimer() {
+            timerInterval = setInterval(function() {
+                const elapsed = Math.floor((new Date() - startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                document.getElementById('timer').textContent = `⏱️ ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // ============ LOAD TEST ============
+        async function loadTest() {
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=getTest`);
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert('Error loading test: ' + data.error);
+                    return;
+                }
+                
+                questions = data.questions;
+                const audioUrl = data.audioUrl;
+                
+                // Load audio
+                audioElement = document.getElementById('audioElement');
+                audioElement.src = audioUrl;
+                
+                // Show loading status
+                document.getElementById('playStatus').textContent = 'Loading audio file...';
+                
+                // Wait for audio to load
+                audioElement.addEventListener('canplaythrough', function() {
+                    audioLoaded = true;
+                    document.getElementById('playBtn').disabled = false;
+                    document.getElementById('playBtnText').textContent = 'Play Audio (Once Only!)';
+                    document.getElementById('playStatus').textContent = 'Audio ready! Click to play.';
+                }, { once: true });
+                
+                audioElement.addEventListener('error', function() {
+                    alert('Failed to load audio. Please refresh and try again.');
+                });
+                
+                // Track audio progress
+                audioElement.addEventListener('timeupdate', function() {
+                    if (audioElement.duration > 0) {
+                        const progress = (audioElement.currentTime / audioElement.duration) * 100;
+                        document.getElementById('progressFill').style.width = progress + '%';
+                    }
+                });
+                
+                audioElement.addEventListener('ended', function() {
+                    document.getElementById('audioStatus').textContent = '✓ Audio finished';
+                    document.getElementById('audioStatus').className = 'audio-status finished';
+                    document.getElementById('playBtnText').textContent = 'Audio Completed';
+                    document.getElementById('playStatus').textContent = 'You may now answer the questions.';
+                });
+                
+                // Render questions
+                renderQuestions();
+                
+            } catch (error) {
+                alert('Failed to load test. Please refresh and try again.');
+                console.error(error);
+            }
+        }
+
+        // ============ AUDIO PLAYBACK ============
+        function playAudio() {
+            if (!audioLoaded || audioPlayed) {
+                return;
+            }
+            
+            audioPlayed = true;
+            audioElement.play();
+            
+            // Update UI
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('playBtnText').textContent = 'Playing...';
+            document.getElementById('playStatus').textContent = 'Listen carefully - this will only play once!';
+            document.getElementById('audioStatus').textContent = '🔊 Playing...';
+            document.getElementById('audioStatus').className = 'audio-status playing';
+            document.getElementById('progressBar').style.display = 'block';
+        }
+
+        // ============ RENDER QUESTIONS ============
+        function renderQuestions() {
+            const container = document.getElementById('questions-container');
+            container.innerHTML = '';
+            
+            questions.forEach((q, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'question-container';
+                
+                let optionsHtml = '';
+                ['A', 'B', 'C', 'D', 'E'].forEach(option => {
+                    if (q[`option${option}`]) {
+                        optionsHtml += `
+                            <div class="option">
+                                <input type="radio" name="q${index}" id="q${index}${option}" value="${option}">
+                                <label for="q${index}${option}">${option}. ${q[`option${option}`]}</label>
+                            </div>
+                        `;
+                    }
+                });
+                
+                questionDiv.innerHTML = `
+                    <div class="question-number">Question ${index + 1}</div>
+                    <div class="question-text">${q.question}</div>
+                    <div class="options">
+                        ${optionsHtml}
+                    </div>
+                `;
+                
+                container.appendChild(questionDiv);
+            });
+            
+            document.getElementById('submitBtn').style.display = 'block';
+        }
+
+        // ============ SUBMIT TEST ============
+        function submitTest() {
+            // Collect answers
+            questions.forEach((q, index) => {
+                const selected = document.querySelector(`input[name="q${index}"]:checked`);
+                answers[index] = selected ? selected.value : '';
+            });
+            
+            // Check for unanswered questions (only if not fraud)
+            if (!isFraud) {
+                const unanswered = questions.filter((q, i) => !answers[i]);
+                if (unanswered.length > 0) {
+                    if (!confirm(`You have ${unanswered.length} unanswered question(s). Submit anyway?`)) {
+                        return;
+                    }
+                }
+            }
+            
+            const endTime = new Date();
+            const duration = Math.floor((endTime - startTime) / 1000);
+            
+            // Prepare submission data
+            const submissionData = {
+                ...studentData,
+                answers: answers,
+                audioPlayed: audioPlayed,
+                duration: duration,
+                warnings: warnings,
+                isFraud: isFraud,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Submit via form (bypasses CORS)
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = SCRIPT_URL;
+            form.target = 'hidden_iframe';
+            form.style.display = 'none';
+            
+            for (const [key, value] of Object.entries(submissionData)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = typeof value === 'object' ? JSON.stringify(value) : value;
+                form.appendChild(input);
+            }
+            
+            // Create hidden iframe
+            let iframe = document.getElementById('hidden_iframe');
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.name = 'hidden_iframe';
+                iframe.id = 'hidden_iframe';
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+            }
+            
+            iframe.onload = function() {
+                setTimeout(() => {
+                    clearInterval(timerInterval);
+                    document.getElementById('test-screen').style.display = 'none';
+                    document.getElementById('submit-screen').style.display = 'block';
+                    
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }, 500);
+            };
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // ============ HELPER FUNCTIONS ============
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMsg');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
