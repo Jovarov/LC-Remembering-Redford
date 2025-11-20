@@ -598,7 +598,7 @@
 
                 const { data: questionRows, error: qError } = await supabase
                     .from('Questions')
-                    .select('id, question_text, option_1, option_2, option_3, option_4, option_5')
+                    .select('id, "Question_text", option_1, option_2, option_3, option_4, option_5')
                     .eq('listening_set_id', LISTENING_SET_ID)
                     .order('id', { ascending: true });
 
@@ -693,7 +693,7 @@
 
                 questionDiv.innerHTML = `
                     <div class="question-number">Question ${index + 1}</div>
-                    <div class="question-text">${q.question_text}</div>
+                    <div class="question-text">${q.Question_text}</div>
                     <div class="options">
                         ${optionsHtml}
                     </div>
