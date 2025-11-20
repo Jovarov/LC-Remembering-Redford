@@ -1,3 +1,4 @@
+<!-- File: listening_test_supabase.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -426,11 +427,17 @@
     <!-- Hidden Audio Element -->
     <audio id="audioElement" style="display: none;"></audio>
 
-    <script>
-        // ============ CONFIGURATION ============
-        // Replace this URL with your Google Apps Script web app URL
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyRrzwS8JvIKqQ92t0Z0qSCYYWDseH0QMm63bw4jQQ7CmChtvb0ho77gcx8BewI1IeK7g/exec';
-        
+    <!-- JS: now a module so we can import Supabase -->
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+        // ======== SUPABASE CONFIG (frontend-safe keys only) ========
+        const SUPABASE_URL = 'https://qmkmmmyfmvslzpvqylll.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_nrNwG9SPJDvLk6VpZnp1uA_mV1qps9E';
+        const LISTENING_SET_ID = 'f619389a-97e7-4e49-a99c-a65ebf263f36';
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         // ============ STATE VARIABLES ============
         let questions = [];
         let answers = {};
@@ -453,7 +460,6 @@
         document.addEventListener('fullscreenchange', function() {
             if (!document.fullscreenElement && document.getElementById('test-screen').style.display === 'block' && !isFraud) {
                 warnings++;
-                console.log('Fullscreen exit. Warnings:', warnings);
                 if (warnings >= 3) {
                     markAsFraud('Exited fullscreen 3 times');
                 } else {
@@ -466,7 +472,6 @@
         document.addEventListener('visibilitychange', function() {
             if (document.hidden && document.getElementById('test-screen').style.display === 'block' && !isFraud) {
                 warnings++;
-                console.log('Tab switch. Warnings:', warnings);
                 if (warnings >= 3) {
                     markAsFraud('Switched tabs 3 times');
                 } else {
@@ -505,40 +510,66 @@
             const lastName = document.getElementById('lastName').value.trim();
             const studentClass = document.getElementById('studentClass').value.trim();
             const testDate = document.getElementById('testDate').value;
-            
+
             if (!firstName || !lastName || !studentClass || !testDate) {
                 showError('Please fill in all fields.');
                 return;
             }
-            
-            studentData = { firstName, lastName, studentClass, testDate };
-            
-            // Check if student has already taken the test
+
+            const studentId = `${firstName}_${lastName}_${studentClass}_${testDate}`;
+            studentData = { firstName, lastName, studentClass, testDate, studentId };
+
             try {
-                const checkResponse = await fetch(`${SCRIPT_URL}?action=checkStudent&firstName=${encodeURIComponent(firstName)}&lastName=${encodeURIComponent(lastName)}`);
-                const checkData = await checkResponse.json();
-                
-                if (checkData.alreadyTaken) {
+                const alreadyTaken = await hasStudentTakenTest(studentId);
+                if (alreadyTaken) {
                     showError('You have already taken this test. Contact your teacher if you believe this is an error.');
                     return;
                 }
-            } catch (error) {
-                showError('Unable to connect to the server. Please check your internet connection.');
+            } catch (err) {
+                console.error(err);
+                showError('Unable to check your test status. Please try again or contact your teacher.');
                 return;
             }
-            
-            // Enter fullscreen
+
             enterFullscreen();
-            
-            // Switch to test screen
+
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('test-screen').style.display = 'block';
             document.getElementById('studentInfo').textContent = `${firstName} ${lastName} - ${studentClass} - ${testDate}`;
-            
+
             startTime = new Date();
             startTimer();
-            
+
             await loadTest();
+        }
+
+        window.startTest = startTest; // expose to onclick
+
+        // ============ CHECK IF STUDENT ALREADY TOOK TEST ============
+        async function hasStudentTakenTest(studentId) {
+            // Fetch question ids for this listening set
+            const { data: qData, error: qError } = await supabase
+                .from('Questions')
+                .select('id')
+                .eq('listening_set_id', LISTENING_SET_ID);
+
+            if (qError) throw qError;
+
+            const questionIds = (qData || []).map(q => q.id);
+            if (questionIds.length === 0) {
+                return false;
+            }
+
+            const { data: ansData, error: ansError } = await supabase
+                .from('student_answers')
+                .select('id')
+                .eq('student_id', studentId)
+                .in('question_id', questionIds)
+                .limit(1);
+
+            if (ansError) throw ansError;
+
+            return ansData && ansData.length > 0;
         }
 
         // ============ TIMER ============
@@ -551,60 +582,67 @@
             }, 1000);
         }
 
-        // ============ LOAD TEST ============
+        // ============ LOAD TEST FROM SUPABASE ============
         async function loadTest() {
             try {
-                const response = await fetch(`${SCRIPT_URL}?action=getTest`);
-                const data = await response.json();
-                
-                if (data.error) {
-                    alert('Error loading test: ' + data.error);
-                    return;
+                const { data: listeningSet, error: lsError } = await supabase
+                    .from('listening_sets')
+                    .select('id, title, audio_url')
+                    .eq('id', LISTENING_SET_ID)
+                    .single();
+
+                if (lsError) throw lsError;
+                if (!listeningSet || !listeningSet.audio_url) {
+                    throw new Error('No audio URL configured for this listening set.');
                 }
-                
-                questions = data.questions;
-                const audioUrl = data.audioUrl;
-                
-                // Load audio
+
+                const { data: questionRows, error: qError } = await supabase
+                    .from('Questions')
+                    .select('id, question_text, option_1, option_2, option_3, option_4, option_5')
+                    .eq('listening_set_id', LISTENING_SET_ID)
+                    .order('id', { ascending: true });
+
+                if (qError) throw qError;
+                if (!questionRows || questionRows.length === 0) {
+                    throw new Error('No questions found for this listening set.');
+                }
+
+                questions = questionRows;
+
                 audioElement = document.getElementById('audioElement');
-                audioElement.src = audioUrl;
-                
-                // Show loading status
+                audioElement.src = listeningSet.audio_url;
+
                 document.getElementById('playStatus').textContent = 'Loading audio file...';
-                
-                // Wait for audio to load
+
                 audioElement.addEventListener('canplaythrough', function() {
                     audioLoaded = true;
                     document.getElementById('playBtn').disabled = false;
                     document.getElementById('playBtnText').textContent = 'Play Audio (Once Only!)';
                     document.getElementById('playStatus').textContent = 'Audio ready! Click to play.';
                 }, { once: true });
-                
+
                 audioElement.addEventListener('error', function() {
-                    alert('Failed to load audio. Please refresh and try again.');
+                    alert('Failed to load audio. Please contact your teacher.');
                 });
-                
-                // Track audio progress
+
                 audioElement.addEventListener('timeupdate', function() {
                     if (audioElement.duration > 0) {
                         const progress = (audioElement.currentTime / audioElement.duration) * 100;
                         document.getElementById('progressFill').style.width = progress + '%';
                     }
                 });
-                
+
                 audioElement.addEventListener('ended', function() {
                     document.getElementById('audioStatus').textContent = '✓ Audio finished';
                     document.getElementById('audioStatus').className = 'audio-status finished';
                     document.getElementById('playBtnText').textContent = 'Audio Completed';
                     document.getElementById('playStatus').textContent = 'You may now answer the questions.';
                 });
-                
-                // Render questions
+
                 renderQuestions();
-                
             } catch (error) {
-                alert('Failed to load test. Please refresh and try again.');
                 console.error(error);
+                alert('Failed to load test. Please contact your teacher.');
             }
         }
 
@@ -613,11 +651,10 @@
             if (!audioLoaded || audioPlayed) {
                 return;
             }
-            
+
             audioPlayed = true;
             audioElement.play();
-            
-            // Update UI
+
             document.getElementById('playBtn').disabled = true;
             document.getElementById('playBtnText').textContent = 'Playing...';
             document.getElementById('playStatus').textContent = 'Listen carefully - this will only play once!';
@@ -626,113 +663,98 @@
             document.getElementById('progressBar').style.display = 'block';
         }
 
+        window.playAudio = playAudio; // expose to onclick
+
         // ============ RENDER QUESTIONS ============
         function renderQuestions() {
             const container = document.getElementById('questions-container');
             container.innerHTML = '';
-            
+
+            const optionFields = ['option_1', 'option_2', 'option_3', 'option_4', 'option_5'];
+            const optionLetters = ['A', 'B', 'C', 'D', 'E'];
+
             questions.forEach((q, index) => {
                 const questionDiv = document.createElement('div');
                 questionDiv.className = 'question-container';
-                
+
                 let optionsHtml = '';
-                ['A', 'B', 'C', 'D', 'E'].forEach(option => {
-                    if (q[`option${option}`]) {
+                optionFields.forEach((field, i) => {
+                    const text = q[field];
+                    if (text) {
+                        const letter = optionLetters[i];
                         optionsHtml += `
                             <div class="option">
-                                <input type="radio" name="q${index}" id="q${index}${option}" value="${option}">
-                                <label for="q${index}${option}">${option}. ${q[`option${option}`]}</label>
+                                <input type="radio" name="q${index}" id="q${index}${letter}" value="${letter}">
+                                <label for="q${index}${letter}">${letter}. ${text}</label>
                             </div>
                         `;
                     }
                 });
-                
+
                 questionDiv.innerHTML = `
                     <div class="question-number">Question ${index + 1}</div>
-                    <div class="question-text">${q.question}</div>
+                    <div class="question-text">${q.question_text}</div>
                     <div class="options">
                         ${optionsHtml}
                     </div>
                 `;
-                
+
                 container.appendChild(questionDiv);
             });
-            
+
             document.getElementById('submitBtn').style.display = 'block';
         }
 
-        // ============ SUBMIT TEST ============
-        function submitTest() {
-            // Collect answers
+        // ============ SUBMIT TEST TO SUPABASE ============
+        async function submitTest() {
             questions.forEach((q, index) => {
                 const selected = document.querySelector(`input[name="q${index}"]:checked`);
                 answers[index] = selected ? selected.value : '';
             });
-            
-            // Check for unanswered questions (only if not fraud)
+
             if (!isFraud) {
-                const unanswered = questions.filter((q, i) => !answers[i]);
-                if (unanswered.length > 0) {
-                    if (!confirm(`You have ${unanswered.length} unanswered question(s). Submit anyway?`)) {
-                        return;
-                    }
+                const unansweredCount = questions.filter((q, i) => !answers[i]).length;
+                if (unansweredCount > 0) {
+                    const proceed = confirm(`You have ${unansweredCount} unanswered question(s). Submit anyway?`);
+                    if (!proceed) return;
                 }
             }
-            
+
             const endTime = new Date();
             const duration = Math.floor((endTime - startTime) / 1000);
-            
-            // Prepare submission data
-            const submissionData = {
-                ...studentData,
-                answers: answers,
-                audioPlayed: audioPlayed,
-                duration: duration,
-                warnings: warnings,
-                isFraud: isFraud,
-                timestamp: new Date().toISOString()
-            };
-            
-            // Submit via form (bypasses CORS)
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = SCRIPT_URL;
-            form.target = 'hidden_iframe';
-            form.style.display = 'none';
-            
-            for (const [key, value] of Object.entries(submissionData)) {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = key;
-                input.value = typeof value === 'object' ? JSON.stringify(value) : value;
-                form.appendChild(input);
+            const studentId = studentData.studentId;
+
+            const rows = questions.map((q, index) => ({
+                student_id: studentId,
+                question_id: q.id,
+                student_answer: answers[index] || ''
+            }));
+
+            try {
+                const { error } = await supabase
+                    .from('student_answers')
+                    .insert(rows);
+
+                if (error) {
+                    console.error(error);
+                    alert('There was an error submitting your test. Please contact your teacher.');
+                    return;
+                }
+
+                clearInterval(timerInterval);
+                document.getElementById('test-screen').style.display = 'none';
+                document.getElementById('submit-screen').style.display = 'block';
+
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            } catch (err) {
+                console.error(err);
+                alert('There was an error submitting your test. Please contact your teacher.');
             }
-            
-            // Create hidden iframe
-            let iframe = document.getElementById('hidden_iframe');
-            if (!iframe) {
-                iframe = document.createElement('iframe');
-                iframe.name = 'hidden_iframe';
-                iframe.id = 'hidden_iframe';
-                iframe.style.display = 'none';
-                document.body.appendChild(iframe);
-            }
-            
-            iframe.onload = function() {
-                setTimeout(() => {
-                    clearInterval(timerInterval);
-                    document.getElementById('test-screen').style.display = 'none';
-                    document.getElementById('submit-screen').style.display = 'block';
-                    
-                    if (document.exitFullscreen) {
-                        document.exitFullscreen();
-                    }
-                }, 500);
-            };
-            
-            document.body.appendChild(form);
-            form.submit();
         }
+
+        window.submitTest = submitTest; // expose to onclick
 
         // ============ HELPER FUNCTIONS ============
         function showError(message) {
